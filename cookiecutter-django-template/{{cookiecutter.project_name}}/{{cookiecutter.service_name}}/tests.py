@@ -2,6 +2,6 @@ from django.test import TestCase
 
 # Create your tests here.
 from .views import hello
-class TestHello(TestCase):
+class Test{{cookiecutter.service_name}}(TestCase):
     def test_hello(self):
         self.assertEqual(hello(), 'hello')

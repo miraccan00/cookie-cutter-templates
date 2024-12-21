@@ -1,0 +1,2 @@
+appName: "{{cookiecutter.service_name}}"
+version: "{{cookiecutter.version}}"

@@ -1,5 +1,5 @@
 from django.db import models
 
 # Create your models here.
-class Hello(models.Model):
+class {{cookiecutter.service_name}}(models.Model):
     pass

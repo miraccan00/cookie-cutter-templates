@@ -1,0 +1,16 @@
+{
+  "group_id": "com.company",
+  "domain_name": "platform",
+  "service_name": "hello",
+  "service_type": ["api", "gateway"],
+
+  "project_slug": "{{ cookiecutter.service_name|lower|replace(' ', '-')|replace('_', '-') }}-{{ cookiecutter.service_type }}",
+  "artifact_id": "{{ cookiecutter.project_slug }}",
+
+  "package_name": "{{ cookiecutter.group_id }}.{{ cookiecutter.domain_name }}.{{ cookiecutter.service_name|lower|replace('-', '_')|replace(' ', '_') }}.{{ cookiecutter.service_type }}",
+  "package_path": "{{ cookiecutter.package_name|replace('.', '/') }}",
+
+  "description": "{{ cookiecutter.service_name }} {{ cookiecutter.service_type }} service",
+  "java_version": "21",
+  "spring_boot_version": "3.4.1"
+}

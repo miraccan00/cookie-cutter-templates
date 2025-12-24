@@ -1,0 +1,7 @@
+{
+  "project_name": "HelloApi",
+  "project_slug": "{{ cookiecutter.project_name|lower|replace(' ', '-')|replace('_', '-') }}",
+  "namespace": "Company.Platform.Hello",
+  "target_framework": "net8.0",
+  "description": "{{ cookiecutter.project_name }} .NET Web API"
+}

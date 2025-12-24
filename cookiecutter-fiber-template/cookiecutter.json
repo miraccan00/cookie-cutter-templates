@@ -1,0 +1,7 @@
+{
+  "project_name": "HelloFiber",
+  "project_slug": "{{ cookiecutter.project_name|lower|replace(' ', '-')|replace('_', '-') }}",
+  "module_path": "github.com/yourname/{{ cookiecutter.project_slug }}",
+  "go_version": "1.21",
+  "description": "{{ cookiecutter.project_name }} Go Fiber API"
+}

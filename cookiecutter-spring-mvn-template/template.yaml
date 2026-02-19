@@ -1,0 +1,141 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: cookiecutter-spring-mvn-template
+  title: Cookiecutter Spring Boot Maven Template
+  description: Scaffold a Spring Boot Maven service using the cookiecutter-spring-mvn template.
+  tags:
+    - recommended
+    - java
+    - spring-boot
+    - maven
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+    - title: Project settings
+      required:
+        - group_id
+        - domain_name
+        - service_name
+        - service_type
+        - owner
+      properties:
+        group_id:
+          title: Group ID
+          type: string
+          description: Maven group ID (e.g. com.company).
+          default: com.company
+          ui:autofocus: true
+        domain_name:
+          title: Domain name
+          type: string
+          description: Domain or platform name (e.g. platform).
+          default: platform
+        service_name:
+          title: Service name
+          type: string
+          description: Name of the service.
+        service_type:
+          title: Service type
+          type: string
+          description: Type of the Spring Boot service.
+          enum:
+            - api
+            - gateway
+        java_version:
+          title: Java version
+          type: string
+          description: Java version to use.
+          default: "21"
+          enum:
+            - "17"
+            - "21"
+        spring_boot_version:
+          title: Spring Boot version
+          type: string
+          description: Spring Boot version.
+          default: 3.4.1
+        description:
+          title: Description
+          type: string
+          description: Short description of the project.
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component.
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds:
+              - Group
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+              - dev.azure.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./{{ cookiecutter.project_slug }}
+        values:
+          cookiecutter:
+            group_id: ${{ parameters.group_id }}
+            domain_name: ${{ parameters.domain_name }}
+            service_name: ${{ parameters.service_name }}
+            service_type: ${{ parameters.service_type }}
+            java_version: ${{ parameters.java_version }}
+            spring_boot_version: ${{ parameters.spring_boot_version }}
+            description: ${{ parameters.description }}
+
+    - id: write-catalog
+      name: Write catalog-info.yaml
+      action: fs:write
+      input:
+        path: catalog-info.yaml
+        content: |
+          apiVersion: backstage.io/v1alpha1
+          kind: Component
+          metadata:
+            name: ${{ parameters.service_name }}-${{ parameters.service_type }}
+            description: Spring Boot service ${{ parameters.service_name }}
+            tags:
+              - java
+              - spring-boot
+              - maven
+          spec:
+            type: service
+            owner: ${{ parameters.owner }}
+            lifecycle: experimental
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        description: Spring Boot service ${{ parameters.service_name }}-${{ parameters.service_type }}
+        repoUrl: ${{ parameters.repoUrl }}
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}

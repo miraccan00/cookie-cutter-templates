@@ -1,0 +1,118 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: cookiecutter-fiber-template
+  title: Cookiecutter Go Fiber Template
+  description: Scaffold a Go Fiber API service using the cookiecutter-fiber template.
+  tags:
+    - recommended
+    - go
+    - fiber
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+    - title: Project settings
+      required:
+        - project_name
+        - module_path
+        - go_version
+        - owner
+      properties:
+        project_name:
+          title: Project name
+          type: string
+          description: Name of the Go Fiber project.
+          ui:autofocus: true
+        module_path:
+          title: Module path
+          type: string
+          description: Go module path (e.g. github.com/yourname/project).
+        go_version:
+          title: Go version
+          type: string
+          description: Go version to use.
+          default: "1.21"
+          enum:
+            - "1.21"
+            - "1.22"
+            - "1.23"
+        description:
+          title: Description
+          type: string
+          description: Short description of the project.
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component.
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds:
+              - Group
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+              - dev.azure.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./{{ cookiecutter.project_slug }}
+        values:
+          cookiecutter:
+            project_name: ${{ parameters.project_name }}
+            module_path: ${{ parameters.module_path }}
+            go_version: ${{ parameters.go_version }}
+            description: ${{ parameters.description }}
+
+    - id: write-catalog
+      name: Write catalog-info.yaml
+      action: fs:write
+      input:
+        path: catalog-info.yaml
+        content: |
+          apiVersion: backstage.io/v1alpha1
+          kind: Component
+          metadata:
+            name: ${{ parameters.project_name }}
+            description: Go Fiber API service ${{ parameters.project_name }}
+            tags:
+              - go
+              - fiber
+          spec:
+            type: service
+            owner: ${{ parameters.owner }}
+            lifecycle: experimental
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        description: Go Fiber API service ${{ parameters.project_name }}
+        repoUrl: ${{ parameters.repoUrl }}
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}

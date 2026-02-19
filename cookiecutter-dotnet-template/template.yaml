@@ -1,0 +1,120 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: cookiecutter-dotnet-template
+  title: Cookiecutter .NET Template
+  description: Scaffold a .NET Web API service using the cookiecutter-dotnet template.
+  tags:
+    - recommended
+    - dotnet
+    - csharp
+    - webapi
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+    - title: Project settings
+      required:
+        - project_name
+        - namespace
+        - target_framework
+        - owner
+      properties:
+        project_name:
+          title: Project name
+          type: string
+          description: Name of the .NET project.
+          ui:autofocus: true
+        namespace:
+          title: Namespace
+          type: string
+          description: Root namespace for the project (e.g. Company.Platform.Hello).
+          default: Company.Platform.Hello
+        target_framework:
+          title: Target framework
+          type: string
+          description: .NET target framework moniker.
+          default: net8.0
+          enum:
+            - net8.0
+            - net9.0
+        description:
+          title: Description
+          type: string
+          description: Short description of the project.
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component.
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds:
+              - Group
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+              - dev.azure.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./{{ cookiecutter.project_slug }}
+        values:
+          cookiecutter:
+            project_name: ${{ parameters.project_name }}
+            namespace: ${{ parameters.namespace }}
+            target_framework: ${{ parameters.target_framework }}
+            description: ${{ parameters.description }}
+
+    - id: write-catalog
+      name: Write catalog-info.yaml
+      action: fs:write
+      input:
+        path: catalog-info.yaml
+        content: |
+          apiVersion: backstage.io/v1alpha1
+          kind: Component
+          metadata:
+            name: ${{ parameters.project_name }}
+            description: .NET Web API service ${{ parameters.project_name }}
+            tags:
+              - dotnet
+              - csharp
+              - webapi
+          spec:
+            type: service
+            owner: ${{ parameters.owner }}
+            lifecycle: experimental
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        description: .NET Web API service ${{ parameters.project_name }}
+        repoUrl: ${{ parameters.repoUrl }}
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}

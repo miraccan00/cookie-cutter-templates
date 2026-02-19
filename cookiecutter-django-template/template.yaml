@@ -1,0 +1,125 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: cookiecutter-django-template
+  title: Cookiecutter Django Template
+  description: Scaffold a Django service using the cookiecutter-django template.
+  tags:
+    - recommended
+    - python
+    - django
+spec:
+  owner: user:guest
+  type: service
+
+  parameters:
+    - title: Project settings
+      required:
+        - project_slug
+        - project_creator
+        - project_type
+        - service_name
+        - version
+        - owner
+      properties:
+        project_slug:
+          title: Project slug
+          type: string
+          description: Repository-friendly name for the Django project.
+          pattern: '^[a-zA-Z][a-zA-Z0-9_-]+$'
+          ui:autofocus: true
+        project_creator:
+          title: Project creator
+          type: string
+          description: Author or team creating the project.
+        project_type:
+          title: Project type
+          type: string
+          description: Choose the Django project flavor.
+          enum:
+            - Rest API
+            - Monolith
+        service_name:
+          title: Service name
+          type: string
+          description: Django app name to generate.
+        version:
+          title: Version
+          type: string
+          description: Initial version for the project.
+          default: 1.0.0
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component.
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds:
+              - Group
+    - title: Choose a location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+              - dev.azure.com
+
+  steps:
+    - id: fetch-base
+      name: Fetch Template
+      action: fetch:template
+      input:
+        url: ./{{cookiecutter.project_slug}}
+        values:
+          cookiecutter:
+            project_slug: ${{ parameters.project_slug }}
+            project_creator: ${{ parameters.project_creator }}
+            project_type: ${{ parameters.project_type }}
+            service_name: ${{ parameters.service_name }}
+            version: ${{ parameters.version }}
+
+    - id: write-catalog
+      name: Write catalog-info.yaml
+      action: fs:write
+      input:
+        path: catalog-info.yaml
+        content: |
+          apiVersion: backstage.io/v1alpha1
+          kind: Component
+          metadata:
+            name: ${{ parameters.project_slug }}
+            description: Django service ${{ parameters.project_slug }}
+            tags:
+              - python
+              - django
+          spec:
+            type: service
+            owner: ${{ parameters.owner }}
+            lifecycle: experimental
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        description: Django service ${{ parameters.project_slug }}
+        repoUrl: ${{ parameters.repoUrl }}
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}
